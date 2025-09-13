@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review {{ restaurant.name }}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        
+        .header p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        
+        .form-content {
+            padding: 30px;
+        }
+        
+        .step {
+            margin-bottom: 30px;
+            display: none;
+        }
+        
+        .step.active {
+            display: block;
+        }
+        
+        .step-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .step-number {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: #667eea;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        
+        .step-title {
+            font-size: 22px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .star-rating {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 20px 0;
+        }
+        
+        .star {
+            font-size: 45px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+            filter: grayscale(100%);
+            opacity: 0.4;
+        }
+        
+        .star:hover {
+            filter: grayscale(0%);
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        
+        .star.selected {
+            filter: grayscale(0%);
+            opacity: 1;
+            transform: scale(1.05);
+        }
+        
+        .rating-labels {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 20px;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .specialty-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .specialty-option {
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .specialty-option:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+        
+        .specialty-option.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            margin-top: 10px;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .progress-bar {
+            height: 4px;
+            background: #e0e0e0;
+            margin-bottom: 30px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+            width: 33.33%;
+        }
+        
+        .review-preview {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            border-left: 4px solid #28a745;
+            margin: 20px 0;
+        }
+        
+        .review-editor {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            border-left: 4px solid #667eea;
+            margin: 20px 0;
+        }
+        
+        .review-textarea {
+            width: 100%;
+            min-height: 120px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            line-height: 1.6;
+            resize: vertical;
+            font-family: inherit;
+        }
+        
+        .review-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .review-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #666;
+            margin-top: 10px;
+        }
+        
+        .copy-button {
+            background: #28a745;
+            margin-top: 10px;
+        }
+        
+        .copy-button:hover {
+            background: #218838;
+        }
+        
+        .google-link {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 12px 24px;
+            background: #4285f4;
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-align: center;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .google-link:hover {
+            background: #3367d6;
+            transform: translateY(-2px);
+        }
+        
+        .feedback-form {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .rating-indicator {
+            text-align: center;
+            margin: 10px 0;
+            font-weight: 600;
+            color: #667eea;
+        }
+        
+        .edit-mode-toggle {
+            text-align: center;
+            margin: 15px 0;
+        }
+        
+        .edit-toggle-btn {
+            background: none;
+            border: 2px solid #667eea;
+            color: #667eea;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .edit-toggle-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+        
+        .google-instructions {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                border-radius: 12px;
+            }
+            
+            .header {
+                padding: 20px 15px;
+            }
+            
+            .form-content {
+                padding: 20px 15px;
+            }
+            
+            .star {
+                font-size: 38px;
+            }
+            
+            .specialty-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍽️ {{ restaurant.name }}</h1>
+            <p>Thanks for dining with us! Your feedback helps us grow 🙏</p>
+        </div>
+        
+        <div class="form-content">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar"></div>
+            </div>
+            
+            <form id="reviewForm" action="/submit-review/{{ restaurant.slug }}" method="POST">
+                
+                <!-- Step 1: Rating -->
+                <div class="step active" id="step1">
+                    <div class="step-header">
+                        <div class="step-number">1</div>
+                        <div class="step-title">How was your experience?</div>
+                    </div>
+                    
+                    <div class="star-rating" id="starRating">
+                        <span class="star" data-rating="1">⭐</span>
+                        <span class="star" data-rating="2">⭐</span>
+                        <span class="star" data-rating="3">⭐</span>
+                        <span class="star" data-rating="4">⭐</span>
+                        <span class="star" data-rating="5">⭐</span>
+                    </div>
+                    
+                    <div class="rating-labels">
+                        <span>Poor</span>
+                        <span>Fair</span>
+                        <span>Good</span>
+                        <span>Very Good</span>
+                        <span>Excellent</span>
+                    </div>
+                    
+                    <div class="rating-indicator" id="ratingText"></div>
+                    
+                    <input type="hidden" name="rating" id="ratingInput" required>
+                    <button type="button" class="btn" id="step1Next" disabled>Continue</button>
+                </div>
+                
+                <!-- Step 2: Details (for positive reviews) -->
+                <div class="step" id="step2Positive">
+                    <div class="step-header">
+                        <div class="step-number">2</div>
+                        <div class="step-title">Tell us more!</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>What did you enjoy most?</label>
+                        <div class="specialty-grid" id="specialtyGrid">
+                            {% for specialty in restaurant.get_specialties() %}
+                            <div class="specialty-option" data-value="{{ specialty }}">
+                                {{ specialty|title }}
+                            </div>
+                            {% endfor %}
+                            <div class="specialty-option" data-value="other">Other</div>
+                        </div>
+                        <input type="text" name="favorite_dish" id="favoriteOther" placeholder="Type your favorite..." style="display:none; margin-top: 10px;">
+                        <input type="hidden" name="favorite_dish_final" id="favoriteDish">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Perfect for:</label>
+                        <select name="atmosphere" id="atmosphere" required>
+                            <option value="">Choose occasion...</option>
+                            <option value="date night">Date night</option>
+                            <option value="family dinner">Family dinner</option>
+                            <option value="business lunch">Business lunch</option>
+                            <option value="casual hangout">Casual hangout</option>
+                            <option value="celebration">Celebration</option>
+                            <option value="solo dining">Solo dining</option>
+                        </select>
+                    </div>
+                    
+                    <button type="button" class="btn" id="generateReview">Generate My Review ✨</button>
+                </div>
+                
+                <!-- Step 2: Feedback (for negative reviews) -->
+                <div class="step" id="step2Negative">
+                    <div class="step-header">
+                        <div class="step-number">2</div>
+                        <div class="step-title">Help us improve</div>
+                    </div>
+                    
+                    <div class="feedback-form">
+                        <p><strong>We're sorry your experience wasn't perfect.</strong></p>
+                        <p>Your feedback is valuable and will be sent directly to management.</p>
+                        
+                        <div class="form-group">
+                            <label>What could we improve?</label>
+                            <select name="issue_area" id="issueArea" required>
+                                <option value="">Select area...</option>
+                                <option value="food quality">Food quality</option>
+                                <option value="service speed">Service speed</option>
+                                <option value="staff friendliness">Staff friendliness</option>
+                                <option value="cleanliness">Cleanliness</option>
+                                <option value="atmosphere">Atmosphere</option>
+                                <option value="value for money">Value for money</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Please tell us more:</label>
+                            <textarea name="feedback_details" rows="4" placeholder="Your detailed feedback helps us improve..." required></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>How can we reach you?</label>
+                            <input type="text" name="contact_info" placeholder="Phone or email (optional)">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn" id="submitFeedback">Send Feedback to Management</button>
+                </div>
+                
+                <!-- Step 3: Review Display -->
+                <div class="step" id="step3">
+                    <div class="step-header">
+                        <div class="step-number">3</div>
+                        <div class="step-title">Your personalized review</div>
+                    </div>
+                    
+                    <!-- Preview Mode -->
+                    <div class="review-preview" id="reviewPreview">
+                        <div style="font-style: italic; line-height: 1.8; margin-bottom: 15px;" id="generatedReviewDisplay">
+                            <!-- Generated review will appear here -->
+                        </div>
+                        <div class="review-stats">
+                            <span id="wordCount">0 words</span>
+                            <span>Ready to share!</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Edit Mode -->
+                    <div class="review-editor" id="reviewEditor" style="display: none;">
+                        <label style="font-weight: 600; margin-bottom: 10px; display: block;">Edit your review:</label>
+                        <textarea class="review-textarea" id="reviewTextarea" placeholder="Edit your review here..."></textarea>
+                        <div class="review-stats">
+                            <span id="editWordCount">0 words</span>
+                            <span>💡 Tip: Longer reviews help others discover this place</span>
+                        </div>
+                    </div>
+                    
+                    <div class="edit-mode-toggle">
+                        <button type="button" class="edit-toggle-btn" id="editToggle">✏️ Edit Review</button>
+                    </div>
+                    
+                    <input type="hidden" name="final_review" id="finalReviewInput">
+                    
+                    <button type="button" class="btn copy-button" id="copyReview">
+                        📋 Copy Review
+                    </button>
+                    
+                    <div class="google-instructions">
+                        <strong>📝 Next step:</strong> Click below to open Google Reviews and paste your review!
+                    </div>
+                    
+                    <a href="#" target="_blank" class="google-link" id="googleReviewLink">
+                        📝 Post Review on Google →
+                    </a>
+                    
+                    <button type="submit" class="btn" style="background: #28a745; margin-top: 20px;">
+                        ✅ Complete Review
+                    </button>
+                </div>
+                
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // JavaScript for interactive form functionality
+        let currentStep = 1;
+        let selectedRating = 0;
+        let selectedDish = '';
+        let generatedReviewText = '';
+        let isEditMode = false;
+        
+        // Rating text labels
+        const ratingTexts = {
+            1: "😞 Poor - We'd love to make this right!",
+            2: "😕 Fair - Help us improve!",
+            3: "🙂 Good - Thanks for the feedback!",
+            4: "😊 Very Good - Great to hear!",
+            5: "🤩 Excellent - Amazing!"
+        };
+        
+        // Star rating functionality with better visual feedback
+        const stars = document.querySelectorAll('.star');
+        const ratingInput = document.getElementById('ratingInput');
+        const ratingText = document.getElementById('ratingText');
+        
+        stars.forEach(star => {
+            star.addEventListener('click', function() {
+                selectedRating = parseInt(this.dataset.rating);
+                ratingInput.value = selectedRating;
+                
+                // Update star display
+                updateStarDisplay(selectedRating);
+                
+                // Update rating text
+                ratingText.textContent = ratingTexts[selectedRating];
+                ratingText.style.display = 'block';
+                
+                // Enable continue button
+                document.getElementById('step1Next').disabled = false;
+            });
+            
+            star.addEventListener('mouseover', function() {
+                const rating = parseInt(this.dataset.rating);
+                updateStarDisplay(rating, true);
+            });
+        });
+        
+        // Reset stars on mouse leave
+        document.getElementById('starRating').addEventListener('mouseleave', function() {
+            updateStarDisplay(selectedRating);
+        });
+        
+        function updateStarDisplay(rating, isHover = false) {
+            stars.forEach((star, index) => {
+                star.classList.remove('selected');
+                if (index < rating) {
+                    star.classList.add('selected');
+                }
+            });
+        }
+        
+        // Step navigation
+        document.getElementById('step1Next').addEventListener('click', function() {
+            if (selectedRating >= 4) {
+                showStep('step2Positive');
+                updateProgress(66.66);
+            } else {
+                showStep('step2Negative');
+                updateProgress(100);
+            }
+        });
+        
+        // Specialty selection
+        const specialtyOptions = document.querySelectorAll('.specialty-option');
+        const favoriteOther = document.getElementById('favoriteOther');
+        const favoriteDish = document.getElementById('favoriteDish');
+        
+        specialtyOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                // Remove previous selection
+                specialtyOptions.forEach(opt => opt.classList.remove('selected'));
+                
+                // Add selection
+                this.classList.add('selected');
+                selectedDish = this.dataset.value;
+                
+                if (selectedDish === 'other') {
+                    favoriteOther.style.display = 'block';
+                    favoriteOther.focus();
+                } else {
+                    favoriteOther.style.display = 'none';
+                    favoriteDish.value = selectedDish;
+                }
+            });
+        });
+        
+        favoriteOther.addEventListener('input', function() {
+            favoriteDish.value = this.value;
+        });
+        
+        // Generate review
+        document.getElementById('generateReview').addEventListener('click', async function() {
+            const atmosphere = document.getElementById('atmosphere').value;
+            const dish = favoriteDish.value;
+            
+            if (!dish || !atmosphere) {
+                alert('Please select your favorite item and occasion!');
+                return;
+            }
+            
+            // Show loading state
+            this.textContent = 'Generating...';
+            this.disabled = true;
+            
+            // Generate review via API
+            try {
+                const response = await fetch('/generate-review/{{ restaurant.slug }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        rating: selectedRating,
+                        favorite_dish: dish,
+                        atmosphere: atmosphere
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    generatedReviewText = data.review;
+                    document.getElementById('generatedReviewDisplay').textContent = generatedReviewText;
+                    document.getElementById('reviewTextarea').value = generatedReviewText;
+                    document.getElementById('finalReviewInput').value = generatedReviewText;
+                    document.getElementById('wordCount').textContent = data.word_count + ' words';
+                    
+                    // Set up Google Review link with restaurant data
+                    setupGoogleReviewLink();
+                    
+                    updateWordCount();
+                    showStep('step3');
+                    updateProgress(100);
+                } else {
+                    alert('Error: ' + (data.error || 'Failed to generate review'));
+                }
+            } catch (error) {
+                console.error('Error generating review:', error);
+                alert('Error generating review. Please try again.');
+            }
+            
+            // Reset button
+            this.textContent = 'Generate My Review ✨';
+            this.disabled = false;
+        });
+        
+        // Set up Google Review link
+        function setupGoogleReviewLink() {
+            const restaurantName = "{{ restaurant.name|urlencode }}";
+            const location = "{{ restaurant.location|urlencode }}";
+            
+            // Try to use Place ID if available, otherwise use search
+            const placeId = "{{ restaurant.google_place_id or '' }}";
+            let googleUrl;
+            
+            if (placeId) {
+                // Direct link to review form with place ID
+                googleUrl = `https://search.google.com/local/writereview?placeid=${placeId}`;
+            } else {
+                // Search-based link that should redirect to reviews
+                googleUrl = `https://www.google.com/maps/search/${restaurantName}+${location}/@?hl=en`;
+            }
+            
+            document.getElementById('googleReviewLink').href = googleUrl;
+        }
+        
+        // Edit mode toggle
+        document.getElementById('editToggle').addEventListener('click', function() {
+            isEditMode = !isEditMode;
+            const reviewPreview = document.getElementById('reviewPreview');
+            const reviewEditor = document.getElementById('reviewEditor');
+            
+            if (isEditMode) {
+                reviewPreview.style.display = 'none';
+                reviewEditor.style.display = 'block';
+                this.textContent = '👁️ Preview Review';
+                this.style.background = '#28a745';
+                this.style.borderColor = '#28a745';
+                this.style.color = 'white';
+            } else {
+                reviewPreview.style.display = 'block';
+                reviewEditor.style.display = 'none';
+                this.textContent = '✏️ Edit Review';
+                this.style.background = '';
+                this.style.borderColor = '#667eea';
+                this.style.color = '#667eea';
+                
+                // Update the preview with edited text
+                const editedText = document.getElementById('reviewTextarea').value;
+                document.getElementById('generatedReviewDisplay').textContent = editedText;
+                document.getElementById('finalReviewInput').value = editedText;
+            }
+        });
+        
+        // Update word count for edited review
+        document.getElementById('reviewTextarea').addEventListener('input', function() {
+            updateWordCount();
+            document.getElementById('finalReviewInput').value = this.value;
+        });
+        
+        function updateWordCount() {
+            const text = document.getElementById('reviewTextarea').value;
+            const wordCount = text.trim().split(/\s+/).length;
+            document.getElementById('editWordCount').textContent = wordCount + ' words';
+        }
+        
+        // Copy review functionality
+        document.getElementById('copyReview').addEventListener('click', function() {
+            const reviewText = isEditMode ? 
+                document.getElementById('reviewTextarea').value : 
+                document.getElementById('generatedReviewDisplay').textContent;
+                
+            navigator.clipboard.writeText(reviewText).then(() => {
+                this.textContent = '✅ Copied!';
+                setTimeout(() => {
+                    this.textContent = '📋 Copy Review';
+                }, 2000);
+            });
+        });
+        
+        // Handle form submission for negative feedback
+        document.getElementById('reviewForm').addEventListener('submit', function(e) {
+            const currentActiveStep = document.querySelector('.step.active');
+            
+            // If we're on the negative feedback step, ensure required fields are filled
+            if (currentActiveStep.id === 'step2Negative') {
+                const issueArea = document.getElementById('issueArea').value;
+                const feedbackDetails = document.querySelector('textarea[name="feedback_details"]').value;
+                
+                if (!issueArea || !feedbackDetails.trim()) {
+                    e.preventDefault();
+                    alert('Please select an issue area and provide detailed feedback.');
+                    return;
+                }
+            }
+        });
+        
+        // Utility functions
+        function showStep(stepId) {
+            document.querySelectorAll('.step').forEach(step => {
+                step.classList.remove('active');
+            });
+            document.getElementById(stepId).classList.add('active');
+        }
+        
+        function updateProgress(percentage) {
+            document.getElementById('progressBar').style.width = percentage + '%';
+        }
+    </script>
+</body>
+</html>
