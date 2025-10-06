@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Your Restaurant - ReviewBoost</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #1e293b;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        .main-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 40px;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            margin: 0 10px;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #f1f5f9;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-right: 12px;
+        }
+
+        .step-number.active {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .step-number.completed {
+            background: #10b981;
+            color: white;
+        }
+
+        .step-line {
+            width: 60px;
+            height: 2px;
+            background: #e2e8f0;
+            margin: 0 20px;
+        }
+
+        .step-content {
+            display: none;
+        }
+
+        .step-content.active {
+            display: block;
+        }
+
+        .search-section {
+            margin-bottom: 32px;
+        }
+
+        .search-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .search-header h2 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #1e293b;
+        }
+
+        .search-header p {
+            color: #64748b;
+            font-size: 16px;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 16px 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .search-btn {
+            padding: 16px 32px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .search-btn:hover {
+            background: #2563eb;
+        }
+
+        .search-btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .results-container {
+            display: none;
+        }
+
+        .results-container.show {
+            display: block;
+        }
+
+        .restaurant-result {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .restaurant-result:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+        }
+
+        .restaurant-result.selected {
+            border-color: #3b82f6;
+            background: #f0f9ff;
+        }
+
+        .restaurant-header {
+            display: flex;
+            justify-content: between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .restaurant-info h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+
+        .restaurant-meta {
+            display: flex;
+            gap: 16px;
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+
+        .restaurant-address {
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .restaurant-stats {
+            display: flex;
+            gap: 20px;
+            font-size: 13px;
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: #64748b;
+        }
+
+        .verification-section {
+            margin-top: 32px;
+            padding: 24px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .verification-header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .verification-header h3 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .verification-methods {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .verification-method {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .verification-method:hover {
+            border-color: #3b82f6;
+        }
+
+        .verification-method.selected {
+            border-color: #3b82f6;
+            background: #f0f9ff;
+        }
+
+        .verification-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+
+        .verification-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .verification-description {
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .setup-form {
+            margin-top: 32px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-help {
+            font-size: 13px;
+            color: #64748b;
+            margin-top: 6px;
+        }
+
+        .specialty-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .specialty-tag {
+            background: #f1f5f9;
+            color: #475569;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-top: 32px;
+        }
+
+        .btn {
+            padding: 14px 32px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-secondary {
+            background: #f8fafc;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #f1f5f9;
+        }
+
+        .success-message {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .success-icon {
+            font-size: 64px;
+            margin-bottom: 24px;
+        }
+
+        .success-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #1e293b;
+        }
+
+        .success-description {
+            color: #64748b;
+            margin-bottom: 32px;
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 20px 16px;
+            }
+            
+            .main-card {
+                padding: 24px;
+            }
+            
+            .search-form {
+                flex-direction: column;
+            }
+            
+            .step-indicator {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Add Your Restaurant</h1>
+            <p>Connect your business to start generating more positive reviews</p>
+        </div>
+
+        <div class="main-card">
+            <!-- Step Indicator -->
+            <div class="step-indicator">
+                <div class="step">
+                    <div class="step-number active" id="step1-indicator">1</div>
+                    <span>Find Restaurant</span>
+                </div>
+                <div class="step-line"></div>
+                <div class="step">
+                    <div class="step-number" id="step2-indicator">2</div>
+                    <span>Verify Ownership</span>
+                </div>
+                <div class="step-line"></div>
+                <div class="step">
+                    <div class="step-number" id="step3-indicator">3</div>
+                    <span>Customize Settings</span>
+                </div>
+            </div>
+
+            <!-- Step 1: Search & Select Restaurant -->
+            <div class="step-content active" id="step1">
+                <div class="search-section">
+                    <div class="search-header">
+                        <h2>Find Your Restaurant</h2>
+                        <p>Search for your business on Google to get started</p>
+                    </div>
+
+                    <form class="search-form" id="searchForm">
+                        <input 
+                            type="text" 
+                            class="search-input" 
+                            id="restaurantSearch" 
+                            placeholder="Enter restaurant name (e.g., 'Joe's Pizza')"
+                            required
+                        >
+                        <input 
+                            type="text" 
+                            class="search-input" 
+                            id="locationSearch" 
+                            placeholder="City or address (e.g., 'Seattle, WA')"
+                        >
+                        <button type="submit" class="search-btn" id="searchBtn">
+                            Search
+                        </button>
+                    </form>
+
+                    <div class="results-container" id="resultsContainer">
+                        <!-- Search results will be populated here -->
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" id="selectRestaurantBtn" style="display: none;">
+                        Continue with Selected Restaurant
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 2: Verification -->
+            <div class="step-content" id="step2">
+                <div class="verification-section">
+                    <div class="verification-header">
+                        <h3>Verify Restaurant Ownership</h3>
+                        <p style="color: #64748b;">Choose how you'd like to verify that you own or manage this restaurant</p>
+                    </div>
+
+                    <div class="verification-methods">
+                        <div class="verification-method" data-method="email">
+                            <div class="verification-icon">📧</div>
+                            <div class="verification-title">Email Verification</div>
+                            <div class="verification-description">We'll send a code to your business email</div>
+                        </div>
+                        <div class="verification-method" data-method="phone">
+                            <div class="verification-icon">📱</div>
+                            <div class="verification-title">Phone Verification</div>
+                            <div class="verification-description">Receive a verification code via SMS</div>
+                        </div>
+                        <div class="verification-method" data-method="manual">
+                            <div class="verification-icon">📋</div>
+                            <div class="verification-title">Manual Review</div>
+                            <div class="verification-description">Upload business documents for verification</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" onclick="goToStep(1)">Back</button>
+                    <button class="btn btn-primary" id="verifyBtn" style="display: none;">
+                        Start Verification
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 3: Setup & Customization -->
+            <div class="step-content" id="step3">
+                <div class="setup-form">
+                    <div class="search-header">
+                        <h2>Customize Your Review System</h2>
+                        <p>Set up your specialties and preferences to generate better reviews</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Menu Specialties</label>
+                        <div id="suggestedSpecialties" class="specialty-tags">
+                            <!-- Auto-populated from Google data -->
+                        </div>
+                        <input type="text" class="form-input" id="customSpecialty" placeholder="Add custom specialty...">
+                        <div class="form-help">Select items you'd like customers to mention in reviews</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Restaurant Personality</label>
+                        <select class="form-select" id="brandVoice">
+                            <option value="">Choose your style...</option>
+                            <option value="casual">Casual & Friendly</option>
+                            <option value="upscale">Elegant & Professional</option>
+                            <option value="family">Family-Friendly</option>
+                            <option value="trendy">Modern & Trendy</option>
+                            <option value="traditional">Traditional & Authentic</option>
+                        </select>
+                        <div class="form-help">This helps us match your restaurant's tone in generated reviews</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Notification Preferences</label>
+                        <select class="form-select" id="notifications">
+                            <option value="instant">Instant notifications</option>
+                            <option value="daily">Daily summary</option>
+                            <option value="weekly">Weekly report</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" onclick="goToStep(2)">Back</button>
+                    <button class="btn btn-primary" id="completeSetupBtn">
+                        Complete Setup
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 4: Success -->
+            <div class="step-content" id="step4">
+                <div class="success-message">
+                    <div class="success-icon">🎉</div>
+                    <h2 class="success-title">Welcome to ReviewBoost!</h2>
+                    <p class="success-description">
+                        Your restaurant has been successfully added. You can now start generating positive reviews and managing customer feedback.
+                    </p>
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" id="goToDashboardBtn">
+                            Go to Dashboard
+                        </button>
+                        <button class="btn btn-secondary" id="previewFormBtn">
+                            Preview Review Form
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        let selectedRestaurant = null;
+        let selectedVerificationMethod = null;
+
+        // Search functionality
+        document.getElementById('searchForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const restaurantName = document.getElementById('restaurantSearch').value;
+            const location = document.getElementById('locationSearch').value;
+            
+            if (!restaurantName) {
+                alert('Please enter a restaurant name');
+                return;
+            }
+            
+            const searchBtn = document.getElementById('searchBtn');
+            searchBtn.textContent = 'Searching...';
+            searchBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/search-business', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: restaurantName,
+                        location: location
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displaySearchResults(data.results);
+                } else {
+                    alert('Search failed: ' + data.error);
+                }
+            } catch (error) {
+                alert('Search error: ' + error.message);
+            }
+            
+            searchBtn.textContent = 'Search';
+            searchBtn.disabled = false;
+        });
+        
+        function displaySearchResults(results) {
+            const container = document.getElementById('resultsContainer');
+            container.innerHTML = '';
+            
+            if (results.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #64748b; padding: 20px;">No restaurants found. Try a different search term.</p>';
+                container.classList.add('show');
+                return;
+            }
+            
+            results.forEach((restaurant, index) => {
+                const div = document.createElement('div');
+                div.className = 'restaurant-result';
+                div.onclick = () => selectRestaurant(restaurant, div);
+                
+                div.innerHTML = `
+                    <div class="restaurant-header">
+                        <div class="restaurant-info">
+                            <h3>${restaurant.name}</h3>
+                            <div class="restaurant-meta">
+                                <span>${restaurant.cuisine || 'Restaurant'}</span>
+                                <span>•</span>
+                                <span>${restaurant.price_level ? '$'.repeat(restaurant.price_level) : 'Price not listed'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="restaurant-address">${restaurant.address || 'Address not available'}</div>
+                    <div class="restaurant-stats">
+                        <div class="stat">
+                            <span>⭐</span>
+                            <span>${restaurant.rating || 'No rating'} (${restaurant.review_count || 0} reviews)</span>
+                        </div>
+                        ${restaurant.phone ? `<div class="stat"><span>📞</span><span>${restaurant.phone}</span></div>` : ''}
+                    </div>
+                `;
+                
+                container.appendChild(div);
+            });
+            
+            container.classList.add('show');
+        }
+        
+        function selectRestaurant(restaurant, element) {
+            // Remove selection from other restaurants
+            document.querySelectorAll('.restaurant-result').forEach(r => r.classList.remove('selected'));
+            
+            // Select this restaurant
+            element.classList.add('selected');
+            selectedRestaurant = restaurant;
+            
+            // Show continue button
+            document.getElementById('selectRestaurantBtn').style.display = 'block';
+        }
+        
+        // Continue to verification step
+        document.getElementById('selectRestaurantBtn').onclick = () => {
+            if (selectedRestaurant) {
+                goToStep(2);
+            }
+        };
+        
+        // Verification method selection
+        document.querySelectorAll('.verification-method').forEach(method => {
+            method.onclick = function() {
+                document.querySelectorAll('.verification-method').forEach(m => m.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedVerificationMethod = this.dataset.method;
+                document.getElementById('verifyBtn').style.display = 'block';
+            };
+        });
+        
+        // Start verification
+        document.getElementById('verifyBtn').onclick = () => {
+            if (selectedVerificationMethod) {
+                // For demo purposes, skip actual verification
+                goToStep(3);
+            }
+        };
+        
+        // Complete setup
+        document.getElementById('completeSetupBtn').onclick = async () => {
+            // Collect form data and create restaurant
+            const setupData = {
+                restaurant: selectedRestaurant,
+                specialties: Array.from(document.querySelectorAll('.specialty-tag')).map(tag => tag.textContent),
+                brand_voice: document.getElementById('brandVoice').value,
+                notifications: document.getElementById('notifications').value
+            };
+            
+            try {
+                const response = await fetch('/api/create-restaurant', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(setupData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    goToStep(4);
+                } else {
+                    alert('Setup failed: ' + data.error);
+                }
+            } catch (error) {
+                alert('Setup error: ' + error.message);
+            }
+        };
+        
+        // Navigation functions
+        function goToStep(step) {
+            // Hide current step
+            document.querySelectorAll('.step-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Update step indicators
+            document.querySelectorAll('.step-number').forEach((indicator, index) => {
+                indicator.classList.remove('active', 'completed');
+                if (index + 1 < step) {
+                    indicator.classList.add('completed');
+                } else if (index + 1 === step) {
+                    indicator.classList.add('active');
+                }
+            });
+            
+            // Show new step
+            document.getElementById(`step${step}`).classList.add('active');
+            currentStep = step;
+        }
+        
+        // Final navigation
+        document.getElementById('goToDashboardBtn').onclick = () => {
+            window.location.href = '/dashboard';
+        };
+        
+        document.getElementById('previewFormBtn').onclick = () => {
+            window.open('/review/demo-restaurant', '_blank');
+        };
+    </script>
+</body>
+</html>

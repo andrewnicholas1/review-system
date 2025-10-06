@@ -163,6 +163,7 @@
             transition: all 0.3s ease;
             font-size: 14px;
             font-weight: 500;
+            position: relative;
         }
         
         .specialty-option:hover {
@@ -174,6 +175,40 @@
             background: #667eea;
             color: white;
             border-color: #667eea;
+        }
+        
+        .specialty-option.selected::after {
+            content: '✓';
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #28a745;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .selected-items {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            min-height: 20px;
+        }
+        
+        .selected-items .item-tag {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin: 2px;
         }
         
         .btn {
@@ -417,7 +452,7 @@
                     </div>
                     
                     <div class="form-group">
-                        <label>What did you enjoy most?</label>
+                        <label>What did you enjoy most? (Select all that apply)</label>
                         <div class="specialty-grid" id="specialtyGrid">
                             {% for specialty in restaurant.get_specialties() %}
                             <div class="specialty-option" data-value="{{ specialty }}">
@@ -426,7 +461,12 @@
                             {% endfor %}
                             <div class="specialty-option" data-value="other">Other</div>
                         </div>
-                        <input type="text" name="favorite_dish" id="favoriteOther" placeholder="Type your favorite..." style="display:none; margin-top: 10px;">
+                        
+                        <div class="selected-items" id="selectedItems">
+                            <small style="color: #666;">Selected items will appear here...</small>
+                        </div>
+                        
+                        <input type="text" name="favorite_dish" id="favoriteOther" placeholder="Type what else you enjoyed..." style="display:none; margin-top: 10px;">
                         <input type="hidden" name="favorite_dish_final" id="favoriteDish">
                     </div>
                     
@@ -441,6 +481,20 @@
                             <option value="celebration">Celebration</option>
                             <option value="solo dining">Solo dining</option>
                         </select>
+                    </div>
+                    
+                    <!-- Personal Touch Questions (appear after atmosphere selection) -->
+                    <div id="personalQuestions" style="display: none;">
+                        <div class="form-group">
+                            <label>What made this visit special? (optional)</label>
+                            <input type="text" name="special_detail" id="specialDetail" class="form-input" placeholder="Birthday dinner, first date, trying something new...">
+                            <small style="color: #64748b; font-size: 12px;">This helps make your review more personal and unique</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>One thing that stood out? (optional)</label>
+                            <input type="text" name="standout_detail" id="standoutDetail" class="form-input" placeholder="The server's recommendation, perfect spice level, great music...">
+                        </div>
                     </div>
                     
                     <button type="button" class="btn" id="generateReview">Generate My Review ✨</button>
@@ -524,14 +578,14 @@
                     </button>
                     
                     <div class="google-instructions">
-                        <strong>📝 Next step:</strong> Click below to open Google Reviews and paste your review!
+                        <strong>🔗 Next step:</strong> Click below to open Google Reviews and paste your review!
                     </div>
                     
                     <a href="#" target="_blank" class="google-link" id="googleReviewLink">
-                        📝 Post Review on Google →
+                        🔍 Post Review on Google →
                     </a>
                     
-                    <button type="submit" class="btn" style="background: #28a745; margin-top: 20px;">
+                    <button type="submit" class="btn" style="background: #28a745; margin-top: 20px;" id="completeReviewBtn">
                         ✅ Complete Review
                     </button>
                 </div>
@@ -544,7 +598,7 @@
         // JavaScript for interactive form functionality
         let currentStep = 1;
         let selectedRating = 0;
-        let selectedDish = '';
+        let selectedDishes = []; // Changed to array for multi-select
         let generatedReviewText = '';
         let isEditMode = false;
         
@@ -609,32 +663,78 @@
             }
         });
         
-        // Specialty selection
+        // Multi-select specialty functionality
         const specialtyOptions = document.querySelectorAll('.specialty-option');
         const favoriteOther = document.getElementById('favoriteOther');
         const favoriteDish = document.getElementById('favoriteDish');
+        const selectedItems = document.getElementById('selectedItems');
         
         specialtyOptions.forEach(option => {
             option.addEventListener('click', function() {
-                // Remove previous selection
-                specialtyOptions.forEach(opt => opt.classList.remove('selected'));
+                const value = this.dataset.value;
                 
-                // Add selection
-                this.classList.add('selected');
-                selectedDish = this.dataset.value;
-                
-                if (selectedDish === 'other') {
-                    favoriteOther.style.display = 'block';
-                    favoriteOther.focus();
+                if (value === 'other') {
+                    // Handle "other" option
+                    if (favoriteOther.style.display === 'none') {
+                        favoriteOther.style.display = 'block';
+                        favoriteOther.focus();
+                        this.classList.add('selected');
+                    } else {
+                        favoriteOther.style.display = 'none';
+                        favoriteOther.value = '';
+                        this.classList.remove('selected');
+                    }
                 } else {
-                    favoriteOther.style.display = 'none';
-                    favoriteDish.value = selectedDish;
+                    // Handle regular options
+                    if (this.classList.contains('selected')) {
+                        // Deselect
+                        this.classList.remove('selected');
+                        selectedDishes = selectedDishes.filter(dish => dish !== value);
+                    } else {
+                        // Select
+                        this.classList.add('selected');
+                        selectedDishes.push(value);
+                    }
                 }
+                
+                updateSelectedItemsDisplay();
+                updateFavoriteDishInput();
             });
         });
         
         favoriteOther.addEventListener('input', function() {
-            favoriteDish.value = this.value;
+            updateFavoriteDishInput();
+        });
+        
+        function updateSelectedItemsDisplay() {
+            if (selectedDishes.length === 0 && favoriteOther.value === '') {
+                selectedItems.innerHTML = '<small style="color: #666;">Selected items will appear here...</small>';
+            } else {
+                let html = '';
+                selectedDishes.forEach(dish => {
+                    html += `<span class="item-tag">${dish}</span>`;
+                });
+                if (favoriteOther.value) {
+                    html += `<span class="item-tag">${favoriteOther.value}</span>`;
+                }
+                selectedItems.innerHTML = html;
+            }
+        }
+        
+        function updateFavoriteDishInput() {
+            let allDishes = [...selectedDishes];
+            if (favoriteOther.value) {
+                allDishes.push(favoriteOther.value);
+            }
+            favoriteDish.value = allDishes.join(', ');
+        }
+        
+        // Show personal questions when atmosphere is selected
+        document.getElementById('atmosphere').addEventListener('change', function() {
+            const personalQuestions = document.getElementById('personalQuestions');
+            if (this.value && personalQuestions) {
+                personalQuestions.style.display = 'block';
+            }
         });
         
         // Generate review
@@ -643,13 +743,19 @@
             const dish = favoriteDish.value;
             
             if (!dish || !atmosphere) {
-                alert('Please select your favorite item and occasion!');
+                alert('Please select at least one item you enjoyed and choose an occasion!');
                 return;
             }
             
             // Show loading state
             this.textContent = 'Generating...';
             this.disabled = true;
+            
+            // Get personal details (check if elements exist)
+            const specialDetailEl = document.getElementById('specialDetail');
+            const standoutDetailEl = document.getElementById('standoutDetail');
+            const specialDetail = specialDetailEl ? specialDetailEl.value.trim() : '';
+            const standoutDetail = standoutDetailEl ? standoutDetailEl.value.trim() : '';
             
             // Generate review via API
             try {
@@ -661,7 +767,9 @@
                     body: JSON.stringify({
                         rating: selectedRating,
                         favorite_dish: dish,
-                        atmosphere: atmosphere
+                        atmosphere: atmosphere,
+                        special_detail: specialDetail,
+                        standout_detail: standoutDetail
                     })
                 });
                 
@@ -669,10 +777,16 @@
                 
                 if (data.success) {
                     generatedReviewText = data.review;
-                    document.getElementById('generatedReviewDisplay').textContent = generatedReviewText;
-                    document.getElementById('reviewTextarea').value = generatedReviewText;
-                    document.getElementById('finalReviewInput').value = generatedReviewText;
-                    document.getElementById('wordCount').textContent = data.word_count + ' words';
+                    
+                    const reviewDisplay = document.getElementById('generatedReviewDisplay');
+                    const reviewTextarea = document.getElementById('reviewTextarea');
+                    const finalReviewInput = document.getElementById('finalReviewInput');
+                    const wordCount = document.getElementById('wordCount');
+                    
+                    if (reviewDisplay) reviewDisplay.textContent = generatedReviewText;
+                    if (reviewTextarea) reviewTextarea.value = generatedReviewText;
+                    if (finalReviewInput) finalReviewInput.value = generatedReviewText;
+                    if (wordCount) wordCount.textContent = data.word_count + ' words';
                     
                     // Set up Google Review link with restaurant data
                     setupGoogleReviewLink();
@@ -767,6 +881,22 @@
             });
         });
         
+        // Complete Review button functionality - FIXED
+        document.getElementById('completeReviewBtn').addEventListener('click', function(e) {
+            e.preventDefault(); // Prevent default form submission
+            
+            // Get the final review text (either preview or edited)
+            const finalReview = isEditMode ? 
+                document.getElementById('reviewTextarea').value : 
+                document.getElementById('generatedReviewDisplay').textContent;
+            
+            // Set the hidden input value
+            document.getElementById('finalReviewInput').value = finalReview;
+            
+            // Submit the form
+            document.getElementById('reviewForm').submit();
+        });
+        
         // Handle form submission for negative feedback
         document.getElementById('reviewForm').addEventListener('submit', function(e) {
             const currentActiveStep = document.querySelector('.step.active');
@@ -782,6 +912,16 @@
                     return;
                 }
             }
+            
+            // For positive reviews, ensure we have the final review
+            if (currentActiveStep.id === 'step3') {
+                const finalReview = document.getElementById('finalReviewInput').value;
+                if (!finalReview || !finalReview.trim()) {
+                    e.preventDefault();
+                    alert('Please generate a review first!');
+                    return;
+                }
+            }
         });
         
         // Utility functions
@@ -793,7 +933,10 @@
         }
         
         function updateProgress(percentage) {
-            document.getElementById('progressBar').style.width = percentage + '%';
+            const progressFill = document.querySelector('.progress-fill');
+            if (progressFill) {
+                progressFill.style.width = percentage + '%';
+            }
         }
     </script>
 </body>

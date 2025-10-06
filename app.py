@@ -1,4 +1,4 @@
-# app.py - Complete Restaurant Review System with Improved UX
+# app.py - Complete Restaurant Review System with Dashboard and Business Import
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 from models import db, Restaurant, User, Review, create_sample_data
 from google_places import create_places_service
@@ -57,8 +57,9 @@ def home():
                 <li><a href="/demo-review" target="_blank"><strong>🎭 Demo Review System</strong></a> - Complete overview</li>
                 <li><a href="/review/pablos-mexican" target="_blank">📱 Customer Review - Pablo's Mexican</a></li>
                 <li><a href="/review/sophias-italian" target="_blank">📱 Customer Review - Sophia's Italian</a></li>
+                <li><a href="/dashboard" target="_blank">🏪 Restaurant Dashboard</a></li>
+                <li><a href="/add-restaurant" target="_blank">➕ Add Real Restaurant</a></li>
                 <li><a href="/test-places" target="_blank">🔍 Test Google Places API</a></li>
-                <li><a href="/dashboard" target="_blank">🏪 Restaurant Dashboard (Coming Soon)</a></li>
             </ul>
         </div>
         
@@ -71,6 +72,8 @@ def home():
                 <li>✅ Removed technical SEO hints from customer interface</li>
                 <li>✅ Professional user experience</li>
                 <li>✅ Mobile-optimized responsive design</li>
+                <li>✅ Restaurant management dashboard</li>
+                <li>✅ Business onboarding system</li>
             </ul>
         </div>
         
@@ -96,7 +99,7 @@ def _render_restaurant_list(restaurants):
             <br><small>🍽️ Specialties: {specialties}</small>
             <br><small>📈 {keywords_count} SEO keywords, {templates_count} templates</small>
             <br><small>📞 {restaurant.phone} • 💳 {restaurant.subscription_plan}</small>
-            <br><small><a href="/review/{restaurant.slug}">📱 Customer Review Interface</a></small>
+            <br><small><a href="/review/{restaurant.slug}">📱 Customer Review Interface</a> | <a href="/dashboard/{restaurant.slug}">🏪 Dashboard</a></small>
         </li>
         """
     html += "</ul>"
@@ -123,7 +126,7 @@ def customer_review(restaurant_slug):
 
 @app.route('/generate-review/<restaurant_slug>', methods=['POST'])
 def generate_review_api(restaurant_slug):
-    """API endpoint to generate review text with improved keyword integration"""
+    """API endpoint to generate and polish reviews using Gemini AI"""
     
     restaurant = Restaurant.query.filter_by(slug=restaurant_slug).first()
     if not restaurant:
@@ -136,6 +139,10 @@ def generate_review_api(restaurant_slug):
         favorite_dish = data.get('favorite_dish', '').strip()
         atmosphere = data.get('atmosphere', '').strip()
         
+        # Get personal details (optional)
+        special_detail = data.get('special_detail', '').strip()
+        standout_detail = data.get('standout_detail', '').strip()
+        
         # Validate input
         if not (1 <= rating <= 5):
             return jsonify({'success': False, 'error': 'Invalid rating'}), 400
@@ -143,17 +150,44 @@ def generate_review_api(restaurant_slug):
         if not favorite_dish or not atmosphere:
             return jsonify({'success': False, 'error': 'Missing required fields'}), 400
         
-        # Generate the review with multiple keywords
+        # Step 1: Generate the base review
         generator = create_review_generator()
-        result = generator.generate_review(restaurant, rating, favorite_dish, atmosphere)
+        
+        # Try to call with personal details, fallback if not supported
+        try:
+            result = generator.generate_review(
+                restaurant, 
+                rating, 
+                favorite_dish, 
+                atmosphere,
+                special_detail if special_detail else None,
+                standout_detail if standout_detail else None
+            )
+        except TypeError:
+            # Fallback for older review generator
+            result = generator.generate_review(restaurant, rating, favorite_dish, atmosphere)
+        
+        rough_review = result['review']
+        
+        # Step 2: Polish with Gemini AI
+        from gemini_polisher import create_review_polisher
+        polisher = create_review_polisher()
+        polish_result = polisher.polish_review(rough_review, restaurant.name)
+        
+        # Use polished version if successful, otherwise use original
+        final_review = polish_result['polished_review']
         
         return jsonify({
             'success': True,
-            'review': result['review'],
-            'word_count': result['word_count'],
-            'seo_count': result['seo_count'],
-            'seo_keywords': result['seo_keywords'],
-            'template_used': result['template_used']
+            'review': final_review,
+            'word_count': len(final_review.split()),
+            'seo_count': result.get('seo_count', 0),
+            'seo_keywords': result.get('seo_keywords', []),
+            'personalized': result.get('personalized', False),
+            'uniqueness_score': result.get('uniqueness_score', 0.9),  # Higher since AI polished
+            'ai_polished': polish_result['polished'],
+            'cost_estimate': polish_result['cost_estimate'],
+            'original_review': rough_review if polish_result['polished'] else None
         })
         
     except Exception as e:
@@ -270,6 +304,268 @@ def submit_review(restaurant_slug):
         </div>
         """, 500
 
+@app.route('/dashboard')
+@app.route('/dashboard/<restaurant_slug>')
+def dashboard(restaurant_slug=None):
+    """Main dashboard homepage with analytics and overview"""
+    
+    # For demo purposes, use first restaurant or find by slug
+    if restaurant_slug:
+        restaurant = Restaurant.query.filter_by(slug=restaurant_slug).first()
+    else:
+        restaurant = Restaurant.query.first()
+    
+    if not restaurant:
+        return redirect(url_for('home'))
+    
+    # Calculate analytics
+    total_reviews = Review.query.filter_by(restaurant_id=restaurant.id).count()
+    positive_reviews = Review.query.filter_by(restaurant_id=restaurant.id).filter(Review.rating >= 4).count()
+    negative_feedback = Review.query.filter_by(restaurant_id=restaurant.id).filter(Review.rating <= 3).count()
+    pending_followups = Review.query.filter_by(
+        restaurant_id=restaurant.id, 
+        requires_followup=True, 
+        followup_completed=False
+    ).count()
+    
+    # Recent reviews (last 10)
+    recent_reviews = Review.query.filter_by(restaurant_id=restaurant.id)\
+        .order_by(Review.created_at.desc())\
+        .limit(10)\
+        .all()
+    
+    # Calculate average rating
+    avg_rating = db.session.query(db.func.avg(Review.rating))\
+        .filter_by(restaurant_id=restaurant.id)\
+        .scalar() or 0
+    
+    # Get all negative feedback for the feedback tab
+    all_negative_feedback = Review.query.filter_by(restaurant_id=restaurant.id)\
+        .filter(Review.rating <= 3)\
+        .order_by(Review.created_at.desc())\
+        .all()
+    
+    # Get pending negative feedback for overview
+    pending_feedback = Review.query.filter_by(
+        restaurant_id=restaurant.id,
+        requires_followup=True,
+        followup_completed=False
+    ).order_by(Review.created_at.desc()).limit(5).all()
+    
+    return render_template('dashboard.html', 
+                         restaurant=restaurant,
+                         stats={
+                             'total_reviews': total_reviews,
+                             'positive_reviews': positive_reviews,
+                             'negative_feedback': negative_feedback,
+                             'pending_followups': pending_followups,
+                             'avg_rating': round(avg_rating, 1)
+                         },
+                         recent_reviews=recent_reviews,
+                         pending_feedback=pending_feedback,
+                         negative_feedback=all_negative_feedback)
+
+@app.route('/dashboard/<restaurant_slug>/settings/update', methods=['POST'])
+def update_restaurant_settings(restaurant_slug):
+    """Update restaurant settings via AJAX"""
+    
+    restaurant = Restaurant.query.filter_by(slug=restaurant_slug).first()
+    if not restaurant:
+        return jsonify({'success': False, 'error': 'Restaurant not found'}), 404
+    
+    try:
+        data = request.get_json()
+        
+        # Update specialties
+        if 'specialties' in data:
+            restaurant.set_specialties(data['specialties'])
+        
+        # Update SEO keywords
+        if 'seo_keywords' in data:
+            restaurant.set_seo_keywords(data['seo_keywords'])
+        
+        # Update custom templates
+        if 'templates' in data:
+            restaurant.set_custom_templates(data['templates'])
+        
+        # Update basic info
+        if 'brand_voice' in data:
+            restaurant.brand_voice = data['brand_voice']
+        
+        if 'auto_sms_enabled' in data:
+            restaurant.auto_sms_enabled = data['auto_sms_enabled']
+        
+        if 'sms_delay_hours' in data:
+            restaurant.sms_delay_hours = data['sms_delay_hours']
+        
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Settings updated successfully'})
+        
+    except Exception as e:
+        print(f"Error updating settings: {e}")
+        return jsonify({'success': False, 'error': 'Failed to update settings'}), 500
+
+@app.route('/dashboard/<restaurant_slug>/feedback/<int:review_id>/respond', methods=['POST'])
+def respond_to_feedback(restaurant_slug, review_id):
+    """Mark negative feedback as responded to"""
+    
+    restaurant = Restaurant.query.filter_by(slug=restaurant_slug).first()
+    if not restaurant:
+        return jsonify({'success': False, 'error': 'Restaurant not found'}), 404
+    
+    review = Review.query.filter_by(id=review_id, restaurant_id=restaurant.id).first()
+    if not review:
+        return jsonify({'success': False, 'error': 'Review not found'}), 404
+    
+    try:
+        # Mark as followed up
+        review.followup_completed = True
+        
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Feedback marked as resolved'})
+        
+    except Exception as e:
+        print(f"Error responding to feedback: {e}")
+        return jsonify({'success': False, 'error': 'Failed to update feedback'}), 500
+
+@app.route('/add-restaurant')
+def add_restaurant():
+    """Business onboarding interface"""
+    return render_template('add_restaurant.html')
+
+@app.route('/api/search-business', methods=['POST'])
+def search_business():
+    """Search for restaurants using Google Places API"""
+    
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+        location = data.get('location', '').strip()
+        
+        if not name:
+            return jsonify({'success': False, 'error': 'Restaurant name is required'}), 400
+        
+        # Use your existing Google Places service
+        places_service = create_places_service()
+        results = places_service.search_restaurant(name, location)
+        
+        # Format results for the frontend
+        formatted_results = []
+        for restaurant in results:
+            formatted_results.append({
+                'place_id': restaurant.get('place_id'),
+                'name': restaurant.get('name'),
+                'address': restaurant.get('address', ''),
+                'phone': restaurant.get('phone', ''),
+                'website': restaurant.get('website', ''),
+                'rating': restaurant.get('rating', 0),
+                'review_count': restaurant.get('review_count', 0),
+                'price_level': restaurant.get('price_level', 1),
+                'cuisine': restaurant.get('cuisine', 'Restaurant'),
+                'types': restaurant.get('types', [])
+            })
+        
+        return jsonify({
+            'success': True,
+            'results': formatted_results
+        })
+        
+    except Exception as e:
+        print(f"Error searching businesses: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/create-restaurant', methods=['POST'])
+def create_restaurant_from_import():
+    """Create a new restaurant from Google Places data"""
+    
+    try:
+        data = request.get_json()
+        restaurant_data = data.get('restaurant', {})
+        
+        if not restaurant_data or not restaurant_data.get('place_id'):
+            return jsonify({'success': False, 'error': 'Invalid restaurant data'}), 400
+        
+        # Check if restaurant already exists
+        existing = Restaurant.query.filter_by(google_place_id=restaurant_data.get('place_id')).first()
+        if existing:
+            return jsonify({'success': False, 'error': 'Restaurant already exists in system'}), 409
+        
+        # Get detailed restaurant information from Google Places
+        places_service = create_places_service()
+        detailed_data = places_service.get_restaurant_details(restaurant_data.get('place_id'))
+        
+        if not detailed_data:
+            return jsonify({'success': False, 'error': 'Could not retrieve restaurant details'}), 404
+        
+        # Override with user-provided customizations
+        specialties = data.get('specialties', [])
+        if specialties:
+            detailed_data['suggested_specialties'] = specialties
+        
+        brand_voice = data.get('brand_voice', '')
+        if brand_voice:
+            detailed_data['brand_voice'] = brand_voice
+        
+        # Create restaurant using the factory method
+        restaurant = Restaurant.create_from_google_places(
+            detailed_data,
+            custom_data={
+                'brand_voice': brand_voice,
+                'specialties_override': specialties if specialties else None
+            }
+        )
+        
+        # Set subscription plan (default to free for new signups)
+        restaurant.subscription_plan = 'free'
+        restaurant.subscription_status = 'active'
+        
+        # Add to database
+        db.session.add(restaurant)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'restaurant_id': restaurant.id,
+            'slug': restaurant.slug,
+            'message': 'Restaurant successfully created'
+        })
+        
+    except Exception as e:
+        print(f"Error creating restaurant: {e}")
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/verify-business', methods=['POST'])
+def verify_business_ownership():
+    """Handle business ownership verification (placeholder for now)"""
+    
+    try:
+        data = request.get_json()
+        method = data.get('method')  # 'email', 'phone', or 'manual'
+        place_id = data.get('place_id')
+        
+        if not method or not place_id:
+            return jsonify({'success': False, 'error': 'Missing verification data'}), 400
+        
+        # For now, we'll simulate verification success
+        # In production, you'd implement actual verification methods:
+        # - Email: Send verification code to business email
+        # - Phone: Send SMS to business phone
+        # - Manual: Store documents for review
+        
+        return jsonify({
+            'success': True,
+            'message': f'Verification via {method} initiated',
+            'verification_id': f'verify_{place_id}_{method}',
+            'status': 'verified'  # In production, this would be 'pending'
+        })
+        
+    except Exception as e:
+        print(f"Error in verification: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/demo-review')
 def demo_review():
     """Demo the review system with sample data"""
@@ -312,7 +608,7 @@ def demo_review():
                         <li>Editable AI-generated reviews</li>
                         <li>Direct Google Reviews integration</li>
                         <li>Professional mobile interface</li>
-                        <li>Removed technical SEO hints</li>
+                        <li>Personalization options</li>
                     </ul>
                 </div>
                 <div>
@@ -570,7 +866,7 @@ def health_check():
             'reviews': review_count,
             'google_places': 'integrated',
             'review_engine': 'active',
-            'features': ['enhanced_ui', 'editable_reviews', 'google_integration']
+            'features': ['enhanced_ui', 'editable_reviews', 'google_integration', 'dashboard', 'business_import']
         }
     except Exception as e:
         return {
@@ -586,8 +882,9 @@ if __name__ == '__main__':
     print("📊 Initialize database: /init-db")
     print("🎭 Demo review system: /demo-review")
     print("📱 Customer reviews: /review/<restaurant-slug>")
+    print("🏪 Restaurant dashboard: /dashboard")
+    print("➕ Add real restaurant: /add-restaurant")
     print("🔍 Test Google Places: /test-places")
-    print("🏪 Dashboard: /dashboard (coming soon)")
-    print("✨ Features: Enhanced UI, Editable Reviews, Google Integration")
+    print("✨ Features: Enhanced UI, Editable Reviews, Google Integration, Dashboard, Business Import")
     
     app.run(host='0.0.0.0', port=port, debug=True)

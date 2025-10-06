@@ -1,108 +1,106 @@
-# review_generator.py - Smart Review Generation Engine
+# review_generator.py - Hybrid Personal Review Generator
 import random
 import re
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional
 
-class ReviewGenerator:
+class HybridReviewGenerator:
     """
-    Smart review generation engine that creates SEO-optimized reviews
-    using restaurant templates, customer input, and AI-driven variation
+    Hybrid review generator that creates personalized reviews using customer details
+    Combines structured generation with personal touches for maximum uniqueness
     """
     
     def __init__(self):
-        self.cuisine_praise = {
-            "Mexican": [
-                "authentic flavors that transported me straight to Mexico",
-                "fresh ingredients with the perfect balance of spices", 
-                "traditional preparation with incredible taste",
-                "genuine Mexican flavors done right",
-                "bold spices and amazing presentation",
-                "like my abuela's cooking but even better"
-            ],
-            "Italian": [
-                "traditional Italian techniques with premium ingredients",
-                "perfectly prepared with authentic Italian flair", 
-                "like dining in Tuscany with incredible attention to detail",
-                "masterfully crafted with genuine Italian passion",
-                "rich, authentic flavors that sing",
-                "perfectly al dente with amazing sauce"
-            ],
-            "Chinese": [
-                "authentic Chinese flavors with perfect seasoning",
-                "traditional techniques with fresh ingredients",
-                "amazing wok hei and perfect balance of flavors"
-            ],
-            "American": [
-                "perfectly prepared comfort food",
-                "classic American flavors done exceptionally well",
-                "hearty portions with incredible taste"
-            ],
-            "Thai": [
-                "perfect balance of sweet, sour, salty and spicy",
-                "authentic Thai flavors with amazing aromatics",
-                "traditional recipes with fresh herbs and spices"
-            ]
+        # Sentence starters with more variety
+        self.openers = [
+            "Just had", "Had an amazing", "Visited", "Went to", "Tried", 
+            "Finally made it to", "Stopped by", "Discovered", "Decided to try"
+        ]
+        
+        # Occasion-specific language
+        self.occasion_language = {
+            'date night': {
+                'descriptors': ['romantic', 'intimate', 'cozy', 'perfect for couples'],
+                'personal_touches': [
+                    'my partner and I', 'we both', 'for our', 'date night', 
+                    'romantic evening', 'special night out'
+                ]
+            },
+            'family dinner': {
+                'descriptors': ['family-friendly', 'welcoming', 'accommodating'],
+                'personal_touches': [
+                    'the whole family', 'with my kids', 'family loved', 'everyone enjoyed',
+                    'even my picky eater', 'kids were happy'
+                ]
+            },
+            'celebration': {
+                'descriptors': ['festive', 'special', 'memorable', 'celebratory'],
+                'personal_touches': [
+                    'celebrating', 'special occasion', 'birthday dinner', 'anniversary',
+                    'milestone', 'party of'
+                ]
+            },
+            'business lunch': {
+                'descriptors': ['professional', 'convenient', 'efficient'],
+                'personal_touches': [
+                    'business meeting', 'with colleagues', 'client lunch', 'work meeting',
+                    'professional setting', 'good for business'
+                ]
+            },
+            'casual hangout': {
+                'descriptors': ['relaxed', 'laid-back', 'comfortable', 'easy-going'],
+                'personal_touches': [
+                    'with friends', 'casual meal', 'hanging out', 'catching up',
+                    'low-key dinner', 'just because'
+                ]
+            },
+            'solo dining': {
+                'descriptors': ['comfortable for solo diners', 'welcoming', 'peaceful'],
+                'personal_touches': [
+                    'dining alone', 'by myself', 'solo meal', 'me time',
+                    'peaceful dinner', 'perfect for solo'
+                ]
+            }
         }
         
-        self.closing_phrases = {
-            "casual": [
-                "Can't wait to come back and try more dishes!",
-                "Already planning my next visit!",
-                "This place is definitely going on my regular rotation!",
-                "Telling all my friends about this gem!",
-                "Will definitely be back soon!",
-                "Highly recommend to anyone in the area!"
-            ],
-            "upscale": [
-                "We look forward to returning for another exceptional experience.",
-                "A dining experience we will fondly remember.",
-                "This establishment has earned our highest recommendation.",
-                "We will certainly be returning guests.",
-                "An outstanding addition to the culinary landscape.",
-                "Exceptional in every regard."
-            ],
-            "fast_casual": [
-                "Perfect for a quick, delicious meal!",
-                "Great option when you want quality fast food!",
-                "Will definitely be back when I'm in the area!",
-                "Exactly what I was looking for!"
-            ]
+        # Words to describe food quality based on rating
+        self.food_descriptors = {
+            5: ['incredible', 'amazing', 'outstanding', 'phenomenal', 'perfect', 'spectacular'],
+            4: ['excellent', 'great', 'wonderful', 'really good', 'delicious', 'impressive']
         }
+        
+        # Service mentions
+        self.service_phrases = [
+            'service was excellent', 'staff was friendly', 'servers were attentive',
+            'great service', 'staff was helpful', 'service was on point'
+        ]
+        
+        # Closing phrases
+        self.closings = [
+            "Will definitely be back!", "Can't wait to return!", "Already planning my next visit!",
+            "This place is going on my regular rotation!", "Highly recommend!", 
+            "Don't sleep on this place!", "Absolutely loved it!"
+        ]
     
-    def generate_review(self, restaurant, rating: int, favorite_dish: str, atmosphere: str) -> Dict:
+    def generate_review(self, restaurant, rating: int, favorite_dish: str, atmosphere: str, 
+                       special_detail: Optional[str] = None, standout_detail: Optional[str] = None) -> Dict:
         """
-        Generate a complete review using restaurant data and customer input
-        
-        Args:
-            restaurant: Restaurant model instance
-            rating: Customer rating (1-5)
-            favorite_dish: Customer's favorite dish
-            atmosphere: Dining occasion/atmosphere
-            
-        Returns:
-            Dict with review text, word count, and SEO analysis
+        Generate personalized review using customer inputs
         """
+        # Parse dishes
+        dishes = self._parse_dishes(favorite_dish)
         
-        # Get restaurant templates or use defaults
-        templates = restaurant.get_custom_templates()
-        if not templates:
-            templates = self._get_default_templates(restaurant.restaurant_type)
-        
-        # Select random template
-        template = random.choice(templates)
-        
-        # Prepare template variables
-        template_vars = self._prepare_template_variables(
-            restaurant, rating, favorite_dish, atmosphere
+        # Generate review components
+        components = self._create_review_components(
+            restaurant, rating, dishes, atmosphere, special_detail, standout_detail
         )
         
-        # Generate review text
-        review_text = template.format(**template_vars)
+        # Build the review
+        review_text = self._build_personalized_review(components)
         
-        # Clean and enhance the review
-        review_text = self._enhance_review(review_text)
+        # Clean up
+        review_text = self._cleanup_review(review_text)
         
-        # Analyze the review
+        # Analyze
         analysis = self._analyze_review(review_text, restaurant.get_seo_keywords())
         
         return {
@@ -110,112 +108,179 @@ class ReviewGenerator:
             'word_count': analysis['word_count'],
             'seo_count': analysis['seo_keywords_used'],
             'seo_keywords': analysis['keywords_found'],
-            'readability_score': analysis['readability'],
-            'template_used': templates.index(template) + 1
+            'personalized': bool(special_detail or standout_detail),
+            'uniqueness_score': self._estimate_uniqueness(special_detail, standout_detail)
         }
     
-    def _prepare_template_variables(self, restaurant, rating: int, favorite_dish: str, atmosphere: str) -> Dict:
-        """Prepare all variables needed for template formatting"""
+    def _parse_dishes(self, favorite_dish: str) -> List[str]:
+        """Parse comma-separated dishes"""
+        if not favorite_dish:
+            return []
+        return [dish.strip() for dish in favorite_dish.split(',') if dish.strip()]
+    
+    def _create_review_components(self, restaurant, rating: int, dishes: List[str], 
+                                atmosphere: str, special_detail: Optional[str], 
+                                standout_detail: Optional[str]) -> Dict:
+        """Create all review components with personalization"""
         
-        # Get and shuffle SEO keywords for variety
-        seo_keywords = restaurant.get_seo_keywords().copy()
-        random.shuffle(seo_keywords)
-        
-        # Get cuisine-specific praise
-        cuisine_praise = self._get_cuisine_praise(restaurant.cuisine)
-        
-        # Get appropriate closing phrase
-        closing_phrase = self._get_closing_phrase(restaurant.restaurant_type)
-        
-        # Enhance favorite dish description
-        enhanced_dish = self._enhance_dish_description(favorite_dish, restaurant.cuisine)
+        occasion_info = self.occasion_language.get(atmosphere, {
+            'descriptors': ['nice', 'pleasant'],
+            'personal_touches': ['good for', 'nice spot for']
+        })
         
         return {
-            'name': restaurant.name,
-            'rating': rating,
-            'dish': enhanced_dish,
-            'favorite_dish': enhanced_dish,  # Alternative name
-            'atmosphere': atmosphere,
-            'location': restaurant.location,
-            'cuisine': restaurant.cuisine,
-            'cuisine_praise': cuisine_praise,
-            'seo_keyword_1': seo_keywords[0] if seo_keywords else f"great {restaurant.cuisine.lower()} restaurant",
-            'seo_keyword_2': seo_keywords[1] if len(seo_keywords) > 1 else seo_keywords[0] if seo_keywords else f"{restaurant.cuisine.lower()} food",
-            'closing_praise': closing_phrase,
-            'restaurant_type': restaurant.restaurant_type
+            'opener': self._create_opener(restaurant.name, special_detail, atmosphere),
+            'food_section': self._create_food_section(dishes, rating, standout_detail),
+            'atmosphere_section': self._create_atmosphere_section(atmosphere, occasion_info),
+            'service_mention': random.choice(self.service_phrases),
+            'personal_touch': self._create_personal_touch(special_detail, standout_detail),
+            'recommendation': self._create_recommendation(restaurant, atmosphere),
+            'closing': random.choice(self.closings)
         }
     
-    def _get_cuisine_praise(self, cuisine: str) -> str:
-        """Get random cuisine-specific praise phrase"""
-        praise_options = self.cuisine_praise.get(cuisine, [
-            "perfectly prepared with great attention to detail",
-            "absolutely delicious with amazing flavors",
-            "expertly crafted and beautifully presented"
-        ])
-        return random.choice(praise_options)
+    def _create_opener(self, restaurant_name: str, special_detail: Optional[str], atmosphere: str) -> str:
+        """Create opening with personal context if available"""
+        opener = random.choice(self.openers)
+        
+        if special_detail:
+            # Use the special detail in the opener
+            special_clean = special_detail.lower()
+            if any(word in special_clean for word in ['birthday', 'anniversary', 'celebration']):
+                return f"{opener} {restaurant_name} for {special_detail.lower()}"
+            else:
+                return f"{opener} {restaurant_name} {special_detail.lower()}"
+        else:
+            # Generic opener
+            return f"{opener} {restaurant_name} {random.choice(['last night', 'today', 'this weekend'])}"
     
-    def _get_closing_phrase(self, restaurant_type: str) -> str:
-        """Get appropriate closing phrase based on restaurant type"""
-        phrases = self.closing_phrases.get(restaurant_type, self.closing_phrases['casual'])
-        return random.choice(phrases)
+    def _create_food_section(self, dishes: List[str], rating: int, standout_detail: Optional[str]) -> str:
+        """Create food description with personal details"""
+        if not dishes:
+            descriptor = random.choice(self.food_descriptors[rating])
+            return f"The food was {descriptor}"
+        
+        # Enhance dish descriptions
+        descriptor = random.choice(self.food_descriptors[rating])
+        
+        if len(dishes) == 1:
+            dish_text = dishes[0]
+        elif len(dishes) == 2:
+            dish_text = f"{dishes[0]} and {dishes[1]}"
+        else:
+            dish_text = f"{', '.join(dishes[:-1])}, and {dishes[-1]}"
+        
+        base_text = f"The {dish_text} was absolutely {descriptor}"
+        
+        # Add standout detail if provided
+        if standout_detail:
+            return f"{base_text} - {standout_detail.lower()}"
+        else:
+            return f"{base_text}"
     
-    def _enhance_dish_description(self, dish: str, cuisine: str) -> str:
-        """Add cuisine-specific enhancements to dish names"""
-        dish_lower = dish.lower()
+    def _create_atmosphere_section(self, atmosphere: str, occasion_info: Dict) -> str:
+        """Create atmosphere description"""
+        descriptor = random.choice(occasion_info['descriptors'])
+        personal_touch = random.choice(occasion_info['personal_touches'])
         
-        # Cuisine-specific dish enhancements
-        enhancements = {
-            'Mexican': {
-                'tacos': ['amazing tacos', 'authentic tacos', 'incredible tacos'],
-                'burrito': ['massive burrito', 'loaded burrito', 'perfect burrito'],
-                'enchiladas': ['cheese enchiladas', 'chicken enchiladas', 'amazing enchiladas'],
-                'margarita': ['perfect margarita', 'refreshing margarita', 'house margarita']
-            },
-            'Italian': {
-                'pasta': ['homemade pasta', 'fresh pasta', 'perfectly cooked pasta'],
-                'pizza': ['wood-fired pizza', 'authentic pizza', 'amazing pizza'],
-                'risotto': ['creamy risotto', 'perfect risotto', 'incredible risotto']
-            }
-        }
+        formats = [
+            f"Perfect atmosphere for {atmosphere}, very {descriptor}",
+            f"Great spot {personal_touch} - {descriptor} setting",
+            f"The ambiance was {descriptor}, ideal for {atmosphere}"
+        ]
         
-        cuisine_enhancements = enhancements.get(cuisine, {})
-        
-        for key_dish, enhanced_options in cuisine_enhancements.items():
-            if key_dish in dish_lower:
-                return random.choice(enhanced_options)
-        
-        # Default enhancement
-        return dish if len(dish.split()) > 1 else f"amazing {dish}"
+        return random.choice(formats)
     
-    def _enhance_review(self, review_text: str) -> str:
-        """Clean up and enhance the generated review"""
+    def _create_personal_touch(self, special_detail: Optional[str], standout_detail: Optional[str]) -> str:
+        """Create additional personal context"""
+        if special_detail and standout_detail:
+            return f"What made it extra special was {standout_detail.lower()}"
+        elif special_detail:
+            return f"Perfect choice for {special_detail.lower()}"
+        elif standout_detail:
+            return f"Loved that {standout_detail.lower()}"
+        else:
+            return ""
+    
+    def _create_recommendation(self, restaurant, atmosphere: str) -> str:
+        """Create recommendation with SEO integration"""
+        seo_keywords = restaurant.get_seo_keywords()
         
-        # Fix common formatting issues
-        review_text = re.sub(r'\s+', ' ', review_text)  # Multiple spaces
-        review_text = re.sub(r'\s+([.!?])', r'\1', review_text)  # Spaces before punctuation
-        review_text = review_text.strip()
+        if seo_keywords:
+            keyword = random.choice(seo_keywords)
+            recommendations = [
+                f"Definitely lives up to being {keyword}",
+                f"Now I know why it's considered {keyword}",
+                f"This is what I think of when I hear '{keyword}'"
+            ]
+            return random.choice(recommendations)
+        else:
+            return f"Highly recommend for {atmosphere} or really any occasion"
+    
+    def _build_personalized_review(self, components: Dict) -> str:
+        """Build the complete review from components"""
         
-        # Ensure proper capitalization
+        # Start with opener and food
+        review_parts = [
+            components['opener'],
+            components['food_section']
+        ]
+        
+        # Add atmosphere
+        review_parts.append(components['atmosphere_section'])
+        
+        # Add personal touch if it exists
+        if components['personal_touch']:
+            review_parts.append(components['personal_touch'])
+        
+        # Add service mention sometimes
+        if random.random() < 0.7:  # 70% chance
+            review_parts.append(components['service_mention'])
+        
+        # Add recommendation
+        review_parts.append(components['recommendation'])
+        
+        # Add closing
+        review_parts.append(components['closing'])
+        
+        return ' '.join(review_parts)
+    
+    def _cleanup_review(self, review_text: str) -> str:
+        """Clean up the review text"""
+        # Fix spacing and punctuation
+        review_text = re.sub(r'\s+', ' ', review_text)
+        review_text = re.sub(r'\s+([.!?])', r'\1', review_text)
+        
+        # Ensure sentences end with periods
         sentences = review_text.split('. ')
-        enhanced_sentences = []
+        cleaned_sentences = []
         
         for sentence in sentences:
             if sentence:
-                # Capitalize first letter of each sentence
+                # Capitalize first letter
                 sentence = sentence[0].upper() + sentence[1:] if len(sentence) > 1 else sentence.upper()
-                enhanced_sentences.append(sentence)
+                cleaned_sentences.append(sentence)
         
-        review_text = '. '.join(enhanced_sentences)
+        review_text = '. '.join(cleaned_sentences)
         
-        # Ensure proper ending punctuation
+        # Ensure proper ending
         if not review_text.endswith(('.', '!', '?')):
             review_text += '!'
         
-        return review_text
+        return review_text.strip()
+    
+    def _estimate_uniqueness(self, special_detail: Optional[str], standout_detail: Optional[str]) -> float:
+        """Estimate uniqueness based on personal details provided"""
+        base_score = 0.6  # Base algorithmic uniqueness
+        
+        if special_detail:
+            base_score += 0.2
+        if standout_detail:
+            base_score += 0.2
+        
+        return min(base_score, 1.0)
     
     def _analyze_review(self, review_text: str, seo_keywords: List[str]) -> Dict:
-        """Analyze the generated review for SEO and quality metrics"""
-        
+        """Analyze the generated review"""
         words = review_text.split()
         word_count = len(words)
         
@@ -227,52 +292,18 @@ class ReviewGenerator:
             if keyword.lower() in review_lower:
                 keywords_found.append(keyword)
         
-        # Calculate basic readability (simplified)
+        # Calculate readability
         sentences = len(re.findall(r'[.!?]+', review_text))
         avg_words_per_sentence = word_count / max(sentences, 1)
-        
-        # Simple readability score (lower is better)
         readability = "Good" if avg_words_per_sentence < 20 else "Complex"
         
         return {
             'word_count': word_count,
             'seo_keywords_used': len(keywords_found),
             'keywords_found': keywords_found,
-            'readability': readability,
-            'sentences': sentences,
-            'avg_words_per_sentence': round(avg_words_per_sentence, 1)
+            'readability': readability
         }
-    
-    def _get_default_templates(self, restaurant_type: str) -> List[str]:
-        """Get default templates when restaurant hasn't customized theirs"""
-        
-        templates = {
-            'casual': [
-                "Had an amazing {rating}-star experience at {name}! The {dish} was absolutely incredible - {cuisine_praise}. Perfect spot for {atmosphere} and definitely {seo_keyword_1}. The {location} location is super convenient! {closing_praise}",
-                
-                "Wow! {name} totally exceeded my expectations! The {dish} was fantastic - {cuisine_praise}. Great atmosphere for {atmosphere}, and honestly one of the {seo_keyword_2} around. {closing_praise}",
-                
-                "Just discovered my new favorite place! {name} serves amazing {rating}-star {cuisine} food. The {dish} was the highlight - {cuisine_praise}. Perfect for {atmosphere} and easily {seo_keyword_1}. {closing_praise}"
-            ],
-            
-            'upscale': [
-                "Exceptional {rating}-star dining experience at {name}. The {dish} was expertly prepared - {cuisine_praise}. The ambiance was perfect for {atmosphere}, truly representing {seo_keyword_1}. The {location} location adds to its sophisticated charm. {closing_praise}",
-                
-                "Outstanding evening at {name}. The {dish} was beautifully crafted - {cuisine_praise}. Every detail made it ideal for {atmosphere}. When seeking {seo_keyword_2}, this restaurant delivers excellence. {closing_praise}",
-                
-                "Remarkable {rating}-star experience at {name}. The {dish} showcased culinary expertise - {cuisine_praise}. Wonderful setting for {atmosphere} with impeccable service throughout. Easily {seo_keyword_1} with its commitment to quality. {closing_praise}"
-            ],
-            
-            'fast_casual': [
-                "Great {rating}-star experience at {name}! The {dish} was delicious and quick - {cuisine_praise}. Perfect for {atmosphere} when you want quality food fast. Definitely {seo_keyword_1} for the area! {closing_praise}",
-                
-                "Really impressed with {name}! The {dish} was amazing - {cuisine_praise}. Great option for {atmosphere} and one of the {seo_keyword_2} spots around. {closing_praise}"
-            ]
-        }
-        
-        return templates.get(restaurant_type, templates['casual'])
 
-# Convenience function for easy import
-def create_review_generator() -> ReviewGenerator:
-    """Factory function to create review generator"""
-    return ReviewGenerator()
+def create_review_generator():
+    """Factory function"""
+    return HybridReviewGenerator()

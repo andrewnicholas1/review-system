@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ restaurant.name }} - ReviewBoost Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+            line-height: 1.6;
+        }
+
+        .dashboard-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 24px 32px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .restaurant-info h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .restaurant-meta {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-header {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-header:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #10b981, #3b82f6);
+        }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .metric-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .metric-value {
+            font-size: 36px;
+            font-weight: 800;
+            color: #1e293b;
+            margin-bottom: 8px;
+            line-height: 1;
+        }
+
+        .metric-subtitle {
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        .metric-trend {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .trend-up {
+            color: #10b981;
+        }
+
+        .trend-down {
+            color: #ef4444;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 32px;
+            margin-bottom: 32px;
+        }
+
+        .section-card {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-header {
+            padding: 24px 24px 0 24px;
+            border-bottom: none;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .section-subtitle {
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        .section-content {
+            padding: 24px;
+        }
+
+        .review-item {
+            padding: 16px 0;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .review-item:last-child {
+            border-bottom: none;
+        }
+
+        .review-content {
+            flex: 1;
+        }
+
+        .review-rating {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .stars {
+            color: #fbbf24;
+            font-size: 14px;
+        }
+
+        .review-time {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .review-preview {
+            font-size: 14px;
+            color: #475569;
+            line-height: 1.4;
+            margin-top: 4px;
+        }
+
+        .review-status {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-positive {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .action-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.2s;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .action-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: #3b82f6;
+        }
+
+        .action-icon {
+            width: 48px;
+            height: 48px;
+            background: #f1f5f9;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin: 0 auto 12px;
+        }
+
+        .action-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+
+        .action-description {
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .alert-card {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .alert-title {
+            font-weight: 600;
+            color: #dc2626;
+            margin-bottom: 4px;
+        }
+
+        .alert-description {
+            font-size: 14px;
+            color: #7f1d1d;
+        }
+
+        .performance-chart {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 16px 0;
+            text-align: center;
+            border: 2px dashed #cbd5e1;
+        }
+
+        .chart-placeholder {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #f1f5f9;
+            margin-bottom: 24px;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            color: #64748b;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+        }
+
+        .integration-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .integration-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .integration-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .integration-details h4 {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .integration-details p {
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-connected {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .status-setup {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 16px;
+            }
+
+            .content-grid {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+
+            .metrics-grid {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            }
+
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Professional Header -->
+    <div class="dashboard-header">
+        <div class="header-content">
+            <div class="restaurant-info">
+                <h1>{{ restaurant.name }}</h1>
+                <div class="restaurant-meta">
+                    {{ restaurant.cuisine }} • {{ restaurant.location }} • Pro Plan
+                </div>
+            </div>
+            <div class="header-actions">
+                <a href="/review/{{ restaurant.slug }}" target="_blank" class="btn-header">
+                    Preview Review Form
+                </a>
+                <a href="#" class="btn-header">
+                    Account Settings
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <!-- Alert for Pending Issues -->
+        {% if stats.pending_followups > 0 %}
+        <div class="alert-card">
+            <div class="alert-title">Action Required</div>
+            <div class="alert-description">
+                You have {{ stats.pending_followups }} customer feedback items that need your attention.
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Key Performance Metrics -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-title">Review Conversion</div>
+                    <div class="metric-icon" style="background: #dbeafe; color: #3b82f6;">
+                        📈
+                    </div>
+                </div>
+                <div class="metric-value">{{ "%.1f"|format((stats.positive_reviews / stats.total_reviews * 100) if stats.total_reviews > 0 else 0) }}%</div>
+                <div class="metric-subtitle">Customers leaving positive reviews</div>
+                <div class="metric-trend trend-up">
+                    ↗ +12% vs last month
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-title">Average Rating</div>
+                    <div class="metric-icon" style="background: #fef3c7; color: #f59e0b;">
+                        ⭐
+                    </div>
+                </div>
+                <div class="metric-value">{{ stats.avg_rating }}</div>
+                <div class="metric-subtitle">Out of 5 stars</div>
+                <div class="metric-trend {% if stats.avg_rating >= 4.0 %}trend-up{% else %}trend-down{% endif %}">
+                    {% if stats.avg_rating >= 4.0 %}↗ Excellent{% else %}↘ Needs improvement{% endif %}
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-title">Reviews Generated</div>
+                    <div class="metric-icon" style="background: #dcfce7; color: #16a34a;">
+                        💬
+                    </div>
+                </div>
+                <div class="metric-value">{{ stats.positive_reviews }}</div>
+                <div class="metric-subtitle">This month</div>
+                <div class="metric-trend trend-up">
+                    ↗ {{ stats.positive_reviews }} new reviews
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <div class="metric-title">Issues Resolved</div>
+                    <div class="metric-icon" style="background: #fef2f2; color: #ef4444;">
+                        🛠️
+                    </div>
+                </div>
+                <div class="metric-value">{{ stats.negative_feedback - stats.pending_followups }}</div>
+                <div class="metric-subtitle">Private feedback handled</div>
+                <div class="metric-trend {% if stats.pending_followups == 0 %}trend-up{% else %}trend-down{% endif %}">
+                    {% if stats.pending_followups == 0 %}✓ All caught up{% else %}⚠ {{ stats.pending_followups }} pending{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Chart Placeholder -->
+        <div class="section-card" style="margin-bottom: 32px;">
+            <div class="section-header">
+                <h2 class="section-title">Review Performance</h2>
+                <p class="section-subtitle">Track your review generation over time</p>
+            </div>
+            <div class="performance-chart">
+                <div class="chart-placeholder">
+                    📊 Performance analytics chart will display here<br>
+                    <small>Coming soon: Daily/weekly/monthly review trends</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Grid -->
+        <div class="content-grid">
+            <!-- Recent Activity -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h2 class="section-title">Recent Customer Activity</h2>
+                    <p class="section-subtitle">Latest reviews and feedback from your customers</p>
+                </div>
+                <div class="section-content">
+                    {% if recent_reviews %}
+                    {% for review in recent_reviews[:5] %}
+                    <div class="review-item">
+                        <div class="review-content">
+                            <div class="review-rating">
+                                <span class="stars">{{ '⭐' * review.rating }}</span>
+                                <span class="review-time">{{ review.created_at.strftime('%b %d, %I:%M %p') }}</span>
+                            </div>
+                            {% if review.generated_review %}
+                            <div class="review-preview">{{ review.generated_review[:80] }}...</div>
+                            {% elif review.feedback_details %}
+                            <div class="review-preview" style="color: #dc2626;">{{ review.feedback_details[:80] }}...</div>
+                            {% endif %}
+                        </div>
+                        <div class="review-status {% if review.rating >= 4 %}status-positive{% else %}status-pending{% endif %}">
+                            {% if review.rating >= 4 %}Published{% else %}Private{% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div style="text-align: center; padding: 40px 20px; color: #64748b;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">📝</div>
+                        <p><strong>No reviews yet</strong></p>
+                        <p>Share your review link with customers to get started!</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions & Integrations -->
+            <div>
+                <div class="section-card" style="margin-bottom: 24px;">
+                    <div class="section-header">
+                        <h2 class="section-title">Quick Actions</h2>
+                        <p class="section-subtitle">Common tasks and tools</p>
+                    </div>
+                    <div class="section-content">
+                        <div class="quick-actions">
+                            <a href="#" class="action-card" onclick="copyReviewLink()">
+                                <div class="action-icon">🔗</div>
+                                <div class="action-title">Copy Review Link</div>
+                                <div class="action-description">Share with customers</div>
+                            </a>
+                            <a href="#" class="action-card">
+                                <div class="action-icon">📱</div>
+                                <div class="action-title">QR Code</div>
+                                <div class="action-description">Print for tables</div>
+                            </a>
+                            <a href="#" class="action-card">
+                                <div class="action-icon">⚙️</div>
+                                <div class="action-title">Settings</div>
+                                <div class="action-description">Customize reviews</div>
+                            </a>
+                            <a href="#" class="action-card">
+                                <div class="action-icon">📊</div>
+                                <div class="action-title">Analytics</div>
+                                <div class="action-description">Detailed reports</div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Integration Status -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2 class="section-title">Integrations</h2>
+                        <p class="section-subtitle">Connected services</p>
+                    </div>
+                    <div class="section-content">
+                        <div class="integration-item">
+                            <div class="integration-info">
+                                <div class="integration-icon" style="background: #4285f4; color: white;">G</div>
+                                <div class="integration-details">
+                                    <h4>Google Business Profile</h4>
+                                    <p>Reviews posting automatically</p>
+                                </div>
+                            </div>
+                            <span class="status-badge status-connected">Connected</span>
+                        </div>
+                        <div class="integration-item">
+                            <div class="integration-info">
+                                <div class="integration-icon" style="background: #00d4aa; color: white;">📱</div>
+                                <div class="integration-details">
+                                    <h4>SMS Notifications</h4>
+                                    <p>Send review requests via text</p>
+                                </div>
+                            </div>
+                            <span class="status-badge status-setup">Setup Required</span>
+                        </div>
+                        <div class="integration-item">
+                            <div class="integration-info">
+                                <div class="integration-icon" style="background: #635bff; color: white;">💳</div>
+                                <div class="integration-details">
+                                    <h4>Payment Processing</h4>
+                                    <p>POS system integration</p>
+                                </div>
+                            </div>
+                            <span class="status-badge status-setup">Available</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function copyReviewLink() {
+            const url = `${window.location.origin}/review/{{ restaurant.slug }}`;
+            navigator.clipboard.writeText(url).then(() => {
+                // Show success notification
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #10b981;
+                    color: white;
+                    padding: 16px 24px;
+                    border-radius: 8px;
+                    font-weight: 500;
+                    z-index: 1000;
+                    animation: slideIn 0.3s ease;
+                `;
+                notification.textContent = '✓ Review link copied to clipboard!';
+                
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
+            });
+        }
+
+        // Add slide-in animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Simulate some interactivity
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add hover effects and animations
+            const cards = document.querySelectorAll('.metric-card, .action-card');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-2px)';
+                    this.style.boxShadow = '0 8px 25px rgba(0,0,0,0.1)';
+                });
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                    this.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
