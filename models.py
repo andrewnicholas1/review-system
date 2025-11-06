@@ -2,8 +2,10 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
 import json
 import re
+
 
 # Initialize SQLAlchemy (database interface)
 db = SQLAlchemy()
@@ -165,6 +167,13 @@ class Restaurant(db.Model):
     def __repr__(self):
         return f'<Restaurant {self.name}>'
 
+    # Add to User model:
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+    
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+    
 class User(UserMixin, db.Model):
     """
     User model - restaurant owners/managers who log into the dashboard
